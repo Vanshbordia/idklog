@@ -1,0 +1,4 @@
+User-Agent: *
+Allow: /
+
+Sitemap: https://idklog.pages.dev/sitemap.xml

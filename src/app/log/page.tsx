@@ -1,7 +1,23 @@
 import fs from "fs"
 import path from "path"
 import matter from "gray-matter"
+import type { Metadata } from "next"
 import { LogList } from "./log-list"
+
+const SITE_URL = "https://idklog.pages.dev"
+
+export const metadata: Metadata = {
+  title: "Log",
+  description: "A log of obscure technical discoveries, brain dumps, and random bullshit",
+  alternates: {
+    canonical: `${SITE_URL}/log`,
+  },
+  openGraph: {
+    title: "Log | idklog",
+    description: "A log of obscure technical discoveries, brain dumps, and random bullshit",
+    url: `${SITE_URL}/log`,
+  },
+}
 
 interface Post {
   slug: string

@@ -15,35 +15,75 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://idklog.pages.dev"
+const SITE_NAME = "idklog"
+const SITE_DESCRIPTION = "A log of obscure technical discoveries, brain dumps, and random bullshit"
+const AUTHOR_NAME = "Vansh Bordia"
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://idklog.pages.dev"),
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: SITE_URL,
+  },
   title: {
-    default: "idklog",
+    default: SITE_NAME,
     template: "%s | idklog",
   },
-  description: "A log of obscure technical discoveries, brain dumps, and random bullshit",
+  description: SITE_DESCRIPTION,
+  keywords: ["tech", "blog", "brain dump", "web development", "programming"],
+  authors: [{ name: AUTHOR_NAME, url: SITE_URL }],
+  creator: AUTHOR_NAME,
+  publisher: AUTHOR_NAME,
+  category: "technology",
+  referrer: "origin-when-cross-origin",
   openGraph: {
     title: {
-      default: "idklog",
+      default: SITE_NAME,
       template: "%s | idklog",
     },
-    description: "A log of obscure technical discoveries, brain dumps, and random bullshit",
-    siteName: "idklog",
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
     type: "website",
+    url: SITE_URL,
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: {
-      default: "idklog",
+      default: SITE_NAME,
       template: "%s | idklog",
     },
-    description: "A log of obscure technical discoveries, brain dumps, and random bullshit",
+    description: SITE_DESCRIPTION,
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
-};
+}
+
+function WebSiteJsonLd() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+    />
+  )
+}
 
 export default function RootLayout({
   children,
@@ -57,6 +97,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background">
+        <WebSiteJsonLd />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

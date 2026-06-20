@@ -17,6 +17,10 @@ export async function generateStaticParams() {
   }))
 }
 
+const SITE_URL = "https://idklog.pages.dev"
+const SITE_NAME = "idklog"
+const AUTHOR_NAME = "Vansh Bordia"
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const postsDirectory = path.join(process.cwd(), 'src/content/posts')
@@ -30,15 +34,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const date = data.date ? new Date(data.date).toISOString() : undefined
   const category = data.category || undefined
   const description = data.description || `${title} - idklog`
+  const url = `${SITE_URL}/log/${slug}`
 
   return {
     title,
     description,
+    alternates: {
+      canonical: url,
+    },
     openGraph: {
       title,
       description,
       type: 'article',
+      url,
+      locale: 'en_US',
       publishedTime: date,
+      authors: [AUTHOR_NAME],
       tags: category ? [category] : undefined,
     },
     twitter: {
@@ -47,6 +58,50 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
     },
   }
+}
+
+function BlogPostingJsonLd({
+  title,
+  description,
+  date,
+  category,
+  slug,
+}: {
+  title: string
+  description: string
+  date: string | null
+  category: string | null
+  slug: string
+}) {
+  const url = `${SITE_URL}/log/${slug}`
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: title,
+    description,
+    url,
+    datePublished: date || undefined,
+    keywords: category || undefined,
+    author: {
+      "@type": "Person",
+      name: AUTHOR_NAME,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": url,
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+    />
+  )
 }
 
 export default async function PostPage({ params }: PageProps) {
@@ -68,6 +123,13 @@ export default async function PostPage({ params }: PageProps) {
 
   return (
     <div className="container mx-auto px-4 py-12">
+      <BlogPostingJsonLd
+        title={title}
+        description={data.description || `${title} - idklog`}
+        date={date}
+        category={category}
+        slug={slug}
+      />
       <header className="mb-10 border-b border-border/50 pb-6">
         <h1 className="text-3xl font-bold tracking-tight font-mono mb-3">
           {title}
