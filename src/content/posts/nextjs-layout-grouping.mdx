@@ -1,0 +1,134 @@
+---
+title: "Next.js App Router: Different Layouts on Nested Routes Using Route Groups"
+date: "2026-06-21T00:00:00.000Z"
+category: "dev"
+---
+
+If you've been using Next.js App Router, you've probably hit this wall: you want `/blog` to have a layout with filters, sidebar, or some wrapping UI, but `/blog/[slug]` needs a completely different layout or no layout at all. The docs don't make this obvious, and you end up digging through GitHub discussions to piece it together.
+
+## The Problem
+
+In the App Router, layouts **nest**. If you define a `layout.tsx` in `app/blog/`, it wraps both `/blog` **and** `/blog/[slug]`. There's no built-in way to say "this layout only applies to the index, not the dynamic route beneath it."
+
+This gets worse in dashboards. Maybe `/dashboard` has a sidebar, but `/dashboard/analytics` needs a full-screen layout. You're stuck.
+
+A common reaction is to reach for `"use client"` and a layout context that conditionally renders based on the current path. You don't need to do that. Route groups solve this at the file structure level, no client components or context required.
+
+## The Solution: Route Groups
+
+Next.js has a feature called **Route Groups** using parentheses `(folderName)`. Folders wrapped in `()` don't become part of the URL path. They're purely for organizational purposes. This lets you split sibling routes under different layouts.
+
+See the official docs on [Route Groups](https://nextjs.org/docs/app/api-reference/file-conventions/route-groups) and [Layout](https://nextjs.org/docs/app/api-reference/file-conventions/layout) for the reference material.
+
+### Example: Blog with Different Layouts
+
+```
+app/
+├── blog/
+│   ├── (list)/
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   └── (detail)/
+│       ├── layout.tsx
+│       └── [slug]/
+│           └── page.tsx
+```
+
+`(list)` and `(detail)` are route groups. They don't appear in the URL. `/blog` renders inside `(list)/layout.tsx`, and `/blog/my-post` renders inside `(detail)/layout.tsx`.
+
+Here is what each layout might look like:
+
+```tsx title="app/blog/(list)/layout.tsx"
+export default function BlogListLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex gap-6">
+      <aside>
+        <FilterSidebar />
+      </aside>
+      <main>{children}</main>
+    </div>
+  );
+}
+```
+
+```tsx title="app/blog/(detail)/layout.tsx"
+export default function BlogDetailLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <article className="max-w-3xl mx-auto">
+      {children}
+    </article>
+  );
+}
+```
+
+Both are server components. No `"use client"`, no context provider, no reading the current path to conditionally render.
+
+### Example: Dashboard with Full-Screen Breakout
+
+```
+app/
+├── dashboard/
+│   ├── (shell)/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── settings/
+│   │       └── page.tsx
+│   └── (fullscreen)/
+│       ├── layout.tsx
+│       └── analytics/
+│           └── page.tsx
+```
+
+Same parent URL, completely different layout contexts.
+
+```tsx title="app/dashboard/(shell)/layout.tsx"
+export default function ShellLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-screen">
+      <Sidebar />
+      <main className="flex-1 overflow-auto p-6">{children}</main>
+    </div>
+  );
+}
+```
+
+```tsx title="app/dashboard/(fullscreen)/layout.tsx"
+export default function FullscreenLayout({ children }: { children: React.ReactNode }) {
+  return <div className="h-screen w-screen">{children}</div>;
+}
+```
+
+`/dashboard` and `/dashboard/settings` get the sidebar shell. `/dashboard/analytics` gets the full-screen layout with no sidebar.
+
+### Example: E-Commerce Product Pages
+
+```
+app/
+├── products/
+│   ├── (browse)/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── category/
+│   │       └── [id]/
+│   │           └── page.tsx
+│   └── (pdp)/
+│       ├── layout.tsx
+│       └── [slug]/
+│           └── page.tsx
+```
+
+The browse layout shows a grid with sorting and pagination controls. The PDP (product detail page) layout is a focused single-product view with images, specs, and add-to-cart.
+
+## Key Things to Remember
+
+1. **Route groups are invisible in the URL.** `(list)` and `(detail)` don't show up in paths.
+2. **Each group can have its own `layout.tsx`.** Different wrappers for routes that share a parent path.
+3. **You can still have a shared layout above.** A `layout.tsx` in `app/blog/` wraps both groups. If you don't want that, just don't create one there.
+4. **Don't create route conflicts.** Two groups can't define the same URL path (e.g. both having a `page.tsx` at the same route).
+5. **No need for `"use client"` or context.** This is a file-structure level solution. Layouts remain server components.
+
+## Why This Isn't Obvious
+
+This is one of those things that should be front and center in the App Router docs but isn't. The [official route groups documentation](https://nextjs.org/docs/app/api-reference/file-conventions/route-groups) mentions grouping for organizational purposes and for creating multiple root layouts, but doesn't clearly explain the "different layouts for sibling routes" use case. The [layout documentation](https://nextjs.org/docs/app/api-reference/file-conventions/layout) explains nesting behavior but doesn't tell you how to break out of it.
+
+This exact problem was raised and solved in the [official Next.js GitHub discussion #47686](https://github.com/vercel/next.js/discussions/47686), where the route groups pattern emerged as the accepted solution. It's a real issue that many developers run into, and the answer is buried in discussions rather than being clearly documented.
